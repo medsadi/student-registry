@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: student-registry-web
+    image: ${DOCKER_USERNAME}/student-registry:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./staticfiles:/app/staticfiles   # fichiers statiques collectés
+      - ./media:/app/media               # médias
+      - ./logs:/app/logs                 # logs
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DEBUG=True
+    restart: unless-stopped
+    networks:
+      - blockchain-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.student-registry.description=Student Registry Blockchain Application"
+      - "com.student-registry.version=1.0"
+
+networks:
+  blockchain-network:
+    driver: bridge
+    name: student-registry-network

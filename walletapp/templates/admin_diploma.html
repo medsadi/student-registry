@@ -1,0 +1,312 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Diploma Management</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="cube"></div>
+        <div class="cube"></div>
+        <div class="cube"></div>
+        <div class="cube"></div>
+        <div class="cube"></div>
+    </div>
+
+    <!-- MetaMask Detection Modal -->
+    <div id="metamaskModal" class="metamask-modal" style="display: none;">
+        <div class="modal-content glass-effect">
+            <div class="modal-header">
+                <i class="fab fa-ethereum"></i>
+                <h2>MetaMask Required</h2>
+            </div>
+            <div class="modal-body">
+                <p>This application requires MetaMask to be installed.</p>
+                <p>Please install MetaMask extension to continue.</p>
+                <a href="https://metamask.io/download/" target="_blank" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Install MetaMask
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Confirmation Modal -->
+    <div id="confirmationModal" class="metamask-modal" style="display: none;">
+        <div class="modal-content glass-effect">
+            <div class="modal-header">
+                <i class="fas fa-clock"></i>
+                <h2>Confirm Transaction</h2>
+            </div>
+            <div class="modal-body">
+                <div class="loading-spinner"></div>
+                <p>Please confirm the transaction in MetaMask...</p>
+                <p class="text-muted">This window will close automatically after confirmation</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Diploma Management System</span>
+            </div>
+            <div class="nav-info">
+                <div class="metamask-status">
+                    <div id="metamaskStatus" class="network-badge">
+                        <i class="fas fa-spinner fa-spin"></i> Connecting...
+                    </div>
+                    <div id="walletInfo" class="wallet-info" style="display: none;">
+                        <span class="wallet-address" id="walletAddress"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="container">
+            
+            <!-- Header -->
+            <header class="page-header">
+                <h1>Diploma NFT Management</h1>
+                <p class="subtitle">Create and Send Digital Diplomas as NFTs</p>
+            </header>
+
+            <!-- Statistics Dashboard -->
+            <div class="stats-grid">
+                <div class="stat-card glass-effect">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ total_students }}</h3>
+                        <p>Total Students</p>
+                    </div>
+                </div>
+
+                <div class="stat-card glass-effect">
+                    <div class="stat-icon">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ diplomas_minted }}</h3>
+                        <p>NFTs Minted</p>
+                    </div>
+                </div>
+
+                <div class="stat-card glass-effect">
+                    <div class="stat-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Polygon</h3>
+                        <p>Blockchain Network</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} glass-effect">
+                            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                            <span>{{ message }}</span>
+                            <button class="close-alert" onclick="this.parentElement.remove()">×</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="content-grid">
+                
+                <!-- Left: Add Student Form -->
+                <div class="form-section glass-effect">
+                    <div class="section-header">
+                        <h2><i class="fas fa-user-plus"></i> Add New Student</h2>
+                        <p>Register student with wallet address</p>
+                    </div>
+
+                    <form method="POST" action="{% url 'blockchain:add_student_admin' %}" class="student-form" id="addStudentForm">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="nom">
+                                <i class="fas fa-user"></i> Last Name
+                            </label>
+                            <input type="text" id="nom" name="nom" required class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prenom">
+                                <i class="fas fa-user"></i> First Name
+                            </label>
+                            <input type="text" id="prenom" name="prenom" required class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dateNaissance">
+                                <i class="fas fa-calendar"></i> Date of Birth
+                            </label>
+                            <input type="text" id="dateNaissance" name="dateNaissance" placeholder="DD/MM/YYYY" required class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="moyenne">
+                                <i class="fas fa-chart-bar"></i> Average (out of 20)
+                            </label>
+                            <input type="number" id="moyenne" name="moyenne" step="0.01" min="0" max="20" required class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="studentAddress">
+                                <i class="fab fa-ethereum"></i> Student Wallet Address
+                            </label>
+                            <input type="text" id="studentAddress" name="studentAddress" placeholder="0x..." required class="form-input" pattern="^0x[a-fA-F0-9]{40}$">
+                            <small class="form-help">MetaMask address of the student</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Register Student
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right: Mint Diploma Form -->
+                <div class="form-section glass-effect">
+                    <div class="section-header">
+                        <h2><i class="fas fa-certificate"></i> Mint & Send Diploma NFT</h2>
+                        <p>Upload PDF and create NFT diploma</p>
+                    </div>
+
+                    <form method="POST" action="{% url 'blockchain:mint_diploma' %}" enctype="multipart/form-data" class="student-form" id="mintDiplomaForm">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="student_id">
+                                <i class="fas fa-user"></i> Select Student
+                            </label>
+                            <select id="student_id" name="student_id" required class="form-input">
+                                <option value="">-- Choose Student --</option>
+                                {% for student in students %}
+                                    <option value="{{ student.id }}" {% if student.diplomaMinted %}disabled{% endif %}>
+                                        {{ student.prenom }} {{ student.nom }} 
+                                        {% if student.diplomaMinted %}(Diploma Already Minted){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="diploma_file">
+                                <i class="fas fa-file-pdf"></i> Upload Diploma PDF
+                            </label>
+                            <input type="file" id="diploma_file" name="diploma_file" accept=".pdf" required class="form-input">
+                            <small class="form-help">PDF file will be uploaded to IPFS</small>
+                        </div>
+
+                        <div class="upload-info glass-effect">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                <strong>Process:</strong>
+                                <p>1. PDF uploaded to IPFS<br>
+                                2. NFT metadata created<br>
+                                3. NFT minted on blockchain<br>
+                                4. NFT sent to student's wallet</p>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-rocket"></i> Mint & Send Diploma NFT
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+
+            <!-- Students Table -->
+            <div class="table-section glass-effect">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> Registered Students</h2>
+                    <p>{{ students|length }} student{{ students|length|pluralize }}</p>
+                </div>
+
+                {% if students %}
+                    <div class="table-container">
+                        <table class="students-table">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-hashtag"></i> ID</th>
+                                    <th><i class="fas fa-user"></i> Name</th>
+                                    <th><i class="fas fa-calendar"></i> Birth Date</th>
+                                    <th><i class="fas fa-star"></i> Average</th>
+                                    <th><i class="fas fa-certificate"></i> Diploma Status</th>
+                                    <th><i class="fas fa-cog"></i> Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td><span class="badge">{{ student.id }}</span></td>
+                                    <td class="student-name">{{ student.prenom }} {{ student.nom }}</td>
+                                    <td>{{ student.dateNaissance }}</td>
+                                    <td>
+                                        <span class="moyenne-badge 
+                                            {% if student.moyenne >= 16 %}excellent
+                                            {% elif student.moyenne >= 14 %}good
+                                            {% elif student.moyenne >= 10 %}average
+                                            {% else %}poor{% endif %}">
+                                            {{ student.moyenne }}/20
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if student.diplomaMinted %}
+                                            <span class="diploma-badge minted">
+                                                <i class="fas fa-check-circle"></i> NFT Minted
+                                            </span>
+                                        {% else %}
+                                            <span class="diploma-badge pending">
+                                                <i class="fas fa-clock"></i> Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.diplomaMinted %}
+                                            <button class="btn-small btn-info" onclick="viewDiploma({{ student.id }})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                        {% else %}
+                                            <button class="btn-small btn-primary" onclick="document.getElementById('student_id').value='{{ student.id }}'">
+                                                <i class="fas fa-certificate"></i> Mint
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>No Students Registered</h3>
+                        <p>Add a student to get started</p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/metamask.js' %}"></script>
+</body>
+</html>
