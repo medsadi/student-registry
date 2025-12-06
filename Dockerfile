@@ -1,9 +1,9 @@
 # ==========================================
 # DOCKERFILE - Student Registry Blockchain
 # ==========================================
-
 FROM python:3.11-slim
 
+# Variables d'environnement
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -12,49 +12,44 @@ ENV PYTHONUNBUFFERED=1 \
 # Créer un utilisateur non-root
 RUN useradd -m -u 1000 appuser
 
-# Installer les dépendances système
-RUN apt-get update && apt-get install -y \
+# Installer dépendances système minimales
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    postgresql-client \
+    netcat-openbsd \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les requirements
+# Copier requirements pour profiter du cache Docker
 COPY requirements.txt .
-
-# Installer les dépendances Python
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-# Copier le script d'entrée AVANT de copier le reste
-COPY docker-entrypoint.sh /app/
+# Copier le code de l'application
+COPY --chown=appuser:appuser manage.py .
+COPY --chown=appuser:appuser docker-entrypoint.sh .
+COPY --chown=appuser:appuser ethsite/ ./ethsite/
+COPY --chown=appuser:appuser walletapp/ ./walletapp/
+
+# ✅ AJOUTE CETTE LIGNE ICI (CRITIQUE !)
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Copier tout le code de l'application
-COPY . .
-
-# Créer les dossiers nécessaires
-RUN mkdir -p static media logs && \
+# Créer les dossiers nécessaires pour volumes
+RUN mkdir -p staticfiles media logs && \
     chown -R appuser:appuser /app
-
-# Collecter les fichiers statiques
-RUN python manage.py collectstatic --noinput || true
-
-# Changer les permissions du propriétaire
-RUN chown -R appuser:appuser /app
 
 # Passer à l'utilisateur non-root
 USER appuser
 
-# Exposer le port
+# Collecter les fichiers statiques depuis walletapp/static vers staticfiles/
+RUN python manage.py collectstatic --noinput || true
+
 EXPOSE 8000
 
-# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
