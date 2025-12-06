@@ -1,4 +1,4 @@
-# student-registry
+# student-registry-django
 
 
 
