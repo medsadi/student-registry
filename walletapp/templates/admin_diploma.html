@@ -50,6 +50,22 @@
         </div>
     </div>
 
+    <!-- Diploma Viewer Modal -->
+    <div id="diplomaModal" class="metamask-modal" style="display: none;">
+        <div class="modal-content glass-effect diploma-modal-large">
+            <div class="modal-header">
+                <h2><i class="fas fa-certificate"></i> Diploma Details</h2>
+                <button class="close-modal" onclick="closeDiplomaModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="diplomaContent">
+                    <div class="loading-spinner"></div>
+                    <p>Loading diploma information...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
@@ -284,7 +300,7 @@
                                                 <i class="fas fa-eye"></i> View
                                             </button>
                                         {% else %}
-                                            <button class="btn-small btn-primary" onclick="document.getElementById('student_id').value='{{ student.id }}'">
+                                            <button class="btn-small btn-primary" onclick="selectStudent({{ student.id }})">
                                                 <i class="fas fa-certificate"></i> Mint
                                             </button>
                                         {% endif %}
@@ -306,7 +322,14 @@
         </div>
     </div>
 
+    <!-- Bouton Home -->
+    <a href="{% url 'blockchain:home' %}" class="admin-button admin-home-button">
+        <i class="fas fa-home"></i>
+        Home
+    </a>
+
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/metamask.js' %}"></script>
+    <script src="{% static 'js/diploma-viewer.js' %}"></script>
 </body>
 </html>

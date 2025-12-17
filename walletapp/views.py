@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.http import JsonResponse
 from .blockchain_service import BlockchainService
 from .diploma_blockchain_service import DiplomaBlockchainService
+import json
 
 # ==========================================
 # VIEW 1: PAGE D'ACCUEIL (ancien système)
@@ -174,7 +176,7 @@ def mint_diploma(request):
 
 
 # ==========================================
-# VIEW 5: VOIR UN DIPLOME
+# VIEW 5: VOIR UN DIPLOME (PAGE HTML)
 # ==========================================
 def view_diploma(request, student_id):
     """Afficher les détails d'un diplôme NFT"""
@@ -191,14 +193,24 @@ def view_diploma(request, student_id):
         # Récupérer les données de l'étudiant
         student_data = diploma_service.contract.functions.getStudent(student_id).call()
         
+        # Extraire les CID IPFS
+        # Format: ipfs://QmXXX ou ipfs://bafyXXX
+        metadata_uri = diploma_info['diploma_uri']
+        metadata_cid = metadata_uri.replace('ipfs://', '')
+        
+        # L'URI contient le CID des métadonnées, pas du PDF
+        # Le PDF CID sera dans les métadonnées JSON
+        
         context = {
             'student_id': student_id,
             'nom': student_data[0],
             'prenom': student_data[1],
             'date_naissance': student_data[2],
             'moyenne': student_data[3] / 100,
-            'diploma_uri': diploma_info['diploma_uri'],
-            'ipfs_url': diploma_info['ipfs_url']
+            'diploma_token_id': student_data[5],
+            'metadata_cid': metadata_cid,
+            'metadata_url': f"https://ipfs.io/ipfs/{metadata_cid}",
+            # Le PDF CID sera chargé via JavaScript depuis les métadonnées
         }
         
         return render(request, 'view_diploma.html', context)
@@ -209,13 +221,46 @@ def view_diploma(request, student_id):
 
 
 # ==========================================
-# VIEW 6: PORTFOLIO ÉTUDIANT
+# VIEW 6: API JSON - Métadonnées du diplôme
+# ==========================================
+def diploma_metadata_api(request, student_id):
+    """API pour récupérer les métadonnées JSON d'un diplôme"""
+    diploma_service = DiplomaBlockchainService()
+    
+    try:
+        diploma_info = diploma_service.get_diploma_info(student_id)
+        
+        if not diploma_info['has_diploma']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Diplôme non trouvé'
+            }, status=404)
+        
+        # Extract CID
+        metadata_cid = diploma_info['diploma_uri'].replace('ipfs://', '')
+
+        # ✔ Return EXACT structure expected by the JS
+        return JsonResponse({
+            'success': True,
+            'metadata': {
+                'diploma_uri': diploma_info['diploma_uri'],       # ipfs://CID
+                'cid': metadata_cid,
+                'gateway_url': f"https://ipfs.io/ipfs/{metadata_cid}"
+            }
+        })
+    
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# ==========================================
+# VIEW 7: PORTFOLIO ÉTUDIANT
 # ==========================================
 def student_portfolio(request):
     """Page où l'étudiant peut voir ses diplômes NFT"""
-    # Cette vue nécessitera l'authentification de l'étudiant
-    # Pour l'instant, c'est une page simple
-    
     context = {
         'message': 'Connectez votre wallet MetaMask pour voir vos diplômes'
     }

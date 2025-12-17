@@ -1,5 +1,5 @@
 // ==========================================
-// METAMASK AUTO-CONNECT - VERSION COMPLÈTE
+// METAMASK AUTO-CONNECT
 // ==========================================
 
 let userAccount = null;
@@ -202,6 +202,22 @@ function showMetaMaskNotification(message, type = 'info') {
     }, 4000);
 }
 
+// ==========================================
+// VIEW DIPLOMA FUNCTION - FIXED VERSION
+// ==========================================
+function viewDiploma(studentId) {
+    console.log('🔍 Viewing diploma for student:', studentId);
+    
+    // Get the base URL dynamically
+    const baseUrl = window.location.origin;
+    const diplomaUrl = `${baseUrl}/admin/diploma/${studentId}/`;
+    
+    console.log('📍 Redirecting to:', diplomaUrl);
+    
+    // Redirect to the diploma view page
+    window.location.href = diplomaUrl;
+}
+
 // Intercepter soumissions de formulaires
 document.addEventListener('DOMContentLoaded', function() {
     const forms = document.querySelectorAll('form');
@@ -213,15 +229,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Fonction placeholder
-function viewDiploma(studentId) {
-    showMetaMaskNotification('Opening diploma viewer...', 'info');
-    console.log('View diploma for student:', studentId);
-}
-
-// ===== STYLES CSS COMPLETS =====
-const metamaskStyle = document.createElement('style');
-metamaskStyle.textContent = `
+// Styles CSS
+const style = document.createElement('style');
+style.textContent = `
     .metamask-modal {
         position: fixed;
         top: 0;
@@ -278,6 +288,11 @@ metamaskStyle.textContent = `
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin: 0 auto 24px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
     
     @keyframes slideOut {
@@ -411,7 +426,6 @@ metamaskStyle.textContent = `
         display: flex;
         align-items: center;
         gap: 10px;
-        text-decoration: none;
     }
     
     .admin-button:hover {
@@ -419,4 +433,4 @@ metamaskStyle.textContent = `
         box-shadow: 0 12px 32px rgba(212, 175, 55, 0.6);
     }
 `;
-document.head.appendChild(metamaskStyle);
+document.head.appendChild(style);
